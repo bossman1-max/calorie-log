@@ -459,7 +459,19 @@
     var ref = slotRefs[slot];
     if (ref && ref.input.value.trim()) addItem(slot, ref.input.value);
   }
+
+  // Committing on blur adds a row, which pushes everything below it down. If that reflow
+  // happens while a tap is still in flight, the control you aimed at moves out from under
+  // your finger and the tap lands on empty space: typing a meal and then reaching for the
+  // protein shake box missed it every time. So blur only *schedules* the commit and lets
+  // the current gesture finish first. Anything that reads the data flushes synchronously.
+  var flushTimer = null;
+  function scheduleCommit() {
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(commitAllPending, 0);
+  }
   function commitAllPending() {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
     SLOTS.forEach(function (sl) { commitPending(sl.id); });
   }
 
@@ -527,7 +539,7 @@
       input.oninput = function () { renderQuick(sl.id); };
       input.onblur = function () {
         if (Date.now() - chipTapAt < 600) return; // a suggestion chip is handling this tap
-        commitPending(sl.id);
+        scheduleCommit();
       };
       wrap.appendChild(form);
 
