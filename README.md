@@ -116,14 +116,15 @@ simple as a deploy gets.
    ```
 3. **In Render:** New + -> Blueprint -> pick the repo -> Apply. It reads `render.yaml` and
    needs nothing else from you. First build takes a couple of minutes.
-4. **Open the URL** it gives you, something like `https://calorie-log.onrender.com`.
+4. **Open the URL** it gives you. This app is live at <https://calorie-log-k9xq.onrender.com>.
    Check `/healthz` returns `ok`.
 5. **Install it on your iPhone:** open the URL in Safari (it must be Safari, Chrome on iOS
    cannot install web apps), then Share -> Add to Home Screen. Launch it from the home
    screen and it opens with no address bar.
 
-If the Render URL ends up different from `calorie-log.onrender.com`, update the URL in
-`.github/workflows/keep-alive.yml` too.
+Render appends a random suffix when the plain name is taken, so the live URL is
+`calorie-log-k9xq.onrender.com`. If you ever recreate the service and the suffix changes, update the URL in
+`.github/workflows/keep-alive.yml` and in the cron-job.org job.
 
 ### A note on your data
 
@@ -152,7 +153,7 @@ So ping during waking hours only:
 Free, reliable, and it never switches itself off.
 
 1. Sign up at <https://cron-job.org>.
-2. Create a cronjob with URL `https://calorie-log.onrender.com/healthz`.
+2. Create a cronjob with URL `https://calorie-log-k9xq.onrender.com/healthz`.
 3. Schedule: every 10 minutes.
 4. Open the job's advanced settings and **restrict it to hours 07:00-23:00**, with the
    timezone set to Asia/Singapore. This is the step that protects the hours budget.

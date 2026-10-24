@@ -30,4 +30,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping the health check
-        run: curl --fail --silent --show-error --max-time 90 https://calorie-log.onrender.com/healthz
+        run: curl --fail --silent --show-error --max-time 90 https://calorie-log-k9xq.onrender.com/healthz
