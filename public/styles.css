@@ -1,0 +1,791 @@
+/* ==========================================================================
+   Calorie Log: a paper training logbook, after dark.
+   Espresso page, bone ink, one ochre accent for the thing you are doing now.
+   Structural rule throughout: dashed border = a suggestion, solid = recorded.
+   ========================================================================== */
+
+:root {
+  --page:        #171412;  /* espresso, the page itself */
+  --raised:      #211D1A;  /* cards and fields sitting on the page */
+  --raised-hi:   #2A251F;  /* pressed / hovered */
+  --line:        #332C27;  /* ruled lines and borders */
+  --line-soft:   #272220;
+
+  --bone:        #EDE6DC;  /* primary ink */
+  --bone-dim:    #A3978A;  /* secondary ink, ~5.6:1 on page */
+  --bone-faint:  #756A60;  /* tertiary, decorative or large only */
+
+  --ochre:       #D9A14A;  /* the one accent: active, primary action */
+  --ochre-deep:  #8A6220;
+  --moss:        #8DAA78;  /* ticked / already done, used sparingly */
+  --rust:        #C96F46;  /* destructive only */
+
+  --on-ochre:    #1A1308;
+
+  --font-display: 'Bricolage Grotesque', 'Trebuchet MS', sans-serif;
+  --font-ui:      'Instrument Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+  --r-card: 14px;
+  --r-field: 10px;
+  --r-chip: 8px;
+
+  --tap: 44px;              /* Apple's minimum touch target */
+  --gut: 18px;              /* page gutter */
+  --shell-max: 560px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --page:      #F4EFE6;
+    --raised:    #FFFCF6;
+    --raised-hi: #F0E9DC;
+    --line:      #DCD2C2;
+    --line-soft: #E6DED1;
+
+    --bone:       #211C17;
+    --bone-dim:   #6B6056;
+    --bone-faint: #9A8E82;
+
+    --ochre:      #A06A12;
+    --ochre-deep: #D9A14A;
+    --moss:       #4F6B3C;
+    --rust:       #A64A22;
+
+    --on-ochre:   #FFF8EC;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: var(--page);
+  color: var(--bone);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, textarea { font: inherit; color: inherit; }
+
+/* Inputs must never drop below 16px or iOS zooms the viewport on focus. */
+input, textarea { font-size: 16px; }
+
+:focus-visible {
+  outline: 2px solid var(--ochre);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) var(--gut) 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+}
+
+.tally { width: 30px; height: 18px; color: var(--bone-dim); overflow: visible; }
+
+.waiting {
+  border: 1px dashed var(--ochre-deep);
+  background: none;
+  color: var(--ochre);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  border-radius: var(--r-chip);
+  cursor: pointer;
+}
+
+/* ---------- scroller + screens ---------- */
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--gut) 28px;
+}
+
+.screen { display: none; }
+.screen.is-active { display: block; }
+
+.screen-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 22px 0 4px;
+}
+
+/* ---------- the signature: ruled section header ----------
+   A mono label, a rule filling the gap, a figure at the far end. Lifted from the
+   way a paper log rules off a section, and reused on every screen so the whole app
+   reads as one book. The figure is always real information, never decoration. */
+
+.rule-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 10px;
+}
+
+.rule-label {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+}
+
+.rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.rule-meta {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--bone-faint);
+}
+
+/* ---------- date bar ---------- */
+
+.datebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 0 2px;
+}
+
+.step {
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--bone-dim);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.step svg { width: 22px; height: 22px; }
+.step:active { background: var(--raised); color: var(--bone); }
+
+.dateblock { flex: 1; text-align: center; position: relative; min-width: 0; }
+
+.date-main {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: clamp(27px, 8.5vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: var(--bone);
+}
+
+.date-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+  margin-top: 5px;
+}
+
+/* The native picker sits invisibly over the date so a tap opens the real iOS wheel. */
+.date-pick {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  border: none;
+  background: none;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* ---------- page-turn ----------
+   Stepping a day slides the sheet the way a logbook page turns. One motion idea,
+   used once, pointing the direction you moved. */
+
+.turnable { will-change: transform; }
+
+@keyframes turn-from-right {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes turn-from-left {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+.turnable.turn-next { animation: turn-from-right 220ms cubic-bezier(.22,.61,.36,1); }
+.turnable.turn-prev { animation: turn-from-left  220ms cubic-bezier(.22,.61,.36,1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .turnable.turn-next, .turnable.turn-prev { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* ---------- chips ---------- */
+
+.chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.chip {
+  min-height: 38px;
+  padding: 7px 13px;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--bone-dim);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.chip:active { background: var(--raised-hi); }
+
+.chip.is-on {
+  background: var(--ochre);
+  border-color: var(--ochre);
+  color: var(--on-ochre);
+  font-weight: 600;
+}
+
+/* Dashed = the app's guess, not your record. Applies to the rotation hint, the
+   quick-add suggestions and autocomplete alike, so the meaning is learnable once. */
+.chip.is-suggested {
+  border-style: dashed;
+  border-color: var(--ochre-deep);
+  color: var(--ochre);
+  background: none;
+}
+
+.chip-add {
+  border-style: dashed;
+  color: var(--bone-faint);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+/* ---------- meals ---------- */
+
+.meal { margin-bottom: 4px; }
+
+.items { list-style: none; margin: 0; padding: 0; }
+
+.item {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.item-text {
+  flex: 1;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 11px 2px;
+  cursor: text;
+  min-height: var(--tap);
+  line-height: 1.35;
+}
+
+.item-edit {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 11px 2px;
+  min-height: var(--tap);
+  outline: none;
+  border-bottom: 2px solid var(--ochre);
+}
+
+.item-del {
+  flex: none;
+  width: var(--tap);
+  border: none;
+  background: none;
+  color: var(--bone-faint);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.item-del:active { background: var(--raised); color: var(--rust); }
+
+.addrow { display: flex; gap: 8px; align-items: center; margin: 8px 0 9px; }
+
+.add-input {
+  flex: 1;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border-radius: var(--r-field);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  outline: none;
+}
+.add-input::placeholder { color: var(--bone-faint); }
+.add-input:focus { border-color: var(--ochre); }
+
+.quickrow {
+  margin-bottom: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  /* Let chips reach the gutter edge so a half-visible one signals "scroll me". */
+  margin-right: calc(var(--gut) * -1);
+  padding-right: var(--gut);
+}
+.quickrow::-webkit-scrollbar { display: none; }
+/* Quick-add chips keep the dashed "not yet recorded" border but drop the ochre.
+   Four rows of amber drowned out the primary action; the accent is reserved for a
+   genuine single recommendation (the split prediction) and for buttons. */
+.quickrow .chip {
+  white-space: nowrap;
+  flex: none;
+  border-color: var(--line);
+  color: var(--bone-dim);
+}
+
+/* ---------- day extras ---------- */
+
+.daygrid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.tick {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 56px;
+  padding: 0 15px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tickbox {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1.5px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: background 140ms, border-color 140ms, color 140ms;
+}
+.tickbox svg { width: 17px; height: 17px; }
+
+.tick[aria-pressed="true"] { border-color: var(--moss); }
+.tick[aria-pressed="true"] .tickbox {
+  background: var(--moss);
+  border-color: var(--moss);
+  color: var(--page);
+}
+
+.weightfield {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 0 14px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+
+.weightfield label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+}
+
+.weightwrap { display: flex; align-items: baseline; gap: 4px; }
+
+.weightwrap input {
+  width: 3.6em;
+  border: none;
+  background: none;
+  padding: 0;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 500;
+  text-align: right;
+}
+.weightwrap input::placeholder { color: var(--bone-faint); }
+.unit { font-family: var(--font-mono); font-size: 12px; color: var(--bone-faint); }
+
+.note {
+  width: 100%;
+  margin-top: 10px;
+  min-height: var(--tap);
+  padding: 10px 14px;
+  border-radius: var(--r-field);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  outline: none;
+}
+.note::placeholder { color: var(--bone-faint); }
+.note:focus { border-color: var(--ochre); }
+
+/* ---------- history ---------- */
+
+.dayrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--line-soft);
+  background: none;
+  padding: 13px 2px;
+  min-height: var(--tap);
+  cursor: pointer;
+}
+.dayrow:active { background: var(--raised); }
+
+.dayrow-date {
+  flex: none;
+  width: 7.1em;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--bone);
+}
+.dayrow-split { flex: 1; font-size: 15px; color: var(--bone-dim); }
+.dayrow-count { font-family: var(--font-mono); font-size: 12px; color: var(--bone-faint); }
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--bone-faint);
+}
+.dot.is-copied { background: var(--moss); border-color: var(--moss); }
+
+.empty {
+  font-size: 15px;
+  color: var(--bone-dim);
+  padding: 26px 0;
+  text-align: center;
+}
+
+/* ---------- copy ---------- */
+
+.headline-card {
+  margin-top: 18px;
+  padding: 4px 16px 16px;
+  border: 1px solid var(--ochre-deep);
+  border-radius: var(--r-card);
+  background: var(--raised);
+}
+.headline-card .rule-head { margin-top: 14px; }
+
+.headline-range {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 2px 0 14px;
+}
+
+.rangefields { display: flex; gap: 8px; margin-top: 10px; }
+
+.rangefield {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px;
+  border-radius: var(--r-field);
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+.rangefield span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+}
+.rangefield input {
+  border: none;
+  background: none;
+  padding: 0;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  min-height: 26px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  .rangefield input, .date-pick { color-scheme: light; }
+}
+
+.skipnote {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--bone-dim);
+  margin: 0 0 9px;
+}
+
+.preview {
+  margin: 0 0 14px;
+  padding: 14px;
+  max-height: 280px;
+  overflow: auto;
+  border-radius: var(--r-field);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--bone-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  min-height: var(--tap);
+  padding: 11px 18px;
+  border-radius: var(--r-field);
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  background: var(--ochre);
+  color: var(--on-ochre);
+}
+.btn-primary:active { filter: brightness(0.92); }
+.btn-primary:disabled { background: var(--raised); color: var(--bone-faint); cursor: default; }
+
+.btn-quiet {
+  background: var(--raised);
+  border-color: var(--line);
+  color: var(--bone);
+  font-weight: 500;
+}
+.btn-quiet:active { background: var(--raised-hi); }
+
+.btn-danger {
+  background: none;
+  border-color: var(--rust);
+  color: var(--rust);
+  font-weight: 500;
+}
+
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.btnrow .rangefield { min-width: 150px; }
+
+.hint {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--bone-dim);
+  margin: 0 0 11px;
+}
+
+/* ---------- settings: split editor ---------- */
+
+.splitrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 5px 0;
+}
+
+.splitrow input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 10px 2px;
+  outline: none;
+  min-height: var(--tap);
+}
+.splitrow input:focus { border-bottom: 2px solid var(--ochre); }
+
+.icon-btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--bone-faint);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+}
+.icon-btn:active { background: var(--raised); color: var(--bone); }
+.icon-btn.is-danger:active { color: var(--rust); }
+.icon-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ---------- tab bar ---------- */
+
+.tabbar {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line);
+  background: var(--page);
+  /* Without the inset the primary row sits under the iPhone home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 2px 8px;
+  min-height: var(--tap);
+  border: none;
+  background: none;
+  color: var(--bone-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.tab svg { width: 21px; height: 21px; }
+.tab.is-active { color: var(--ochre); }
+
+/* ---------- toast + manual copy ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 11px 16px;
+  border-radius: var(--r-field);
+  border: 1px solid var(--line);
+  background: var(--raised-hi);
+  color: var(--bone);
+  font-size: 14.5px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  animation: toast-in 180ms ease-out;
+}
+.toast[hidden] { display: none; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.toast-action {
+  border: none;
+  background: none;
+  color: var(--ochre);
+  font-weight: 600;
+  font-size: 14.5px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.toast-action[hidden] { display: none; }
+
+.manual {
+  width: min(520px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--raised);
+  color: var(--bone);
+  padding: 20px;
+}
+.manual::backdrop { background: rgba(0, 0, 0, 0.6); }
+.manual h2 { font-family: var(--font-display); font-size: 21px; margin: 0 0 6px; }
+.manual p { font-size: 14px; color: var(--bone-dim); margin: 0 0 12px; }
+
+.manual textarea {
+  width: 100%;
+  height: 240px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: var(--r-field);
+  border: 1px solid var(--line);
+  background: var(--page);
+  color: var(--bone-dim);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: none;
+}

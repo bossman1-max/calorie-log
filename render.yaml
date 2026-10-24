@@ -1,0 +1,14 @@
+# Render Blueprint. In Render: New + -> Blueprint -> point at this repo.
+# There are no secrets and no environment variables to paste: the app has no API keys,
+# no database and no backend state. Everything lives in the browser.
+services:
+  - type: web
+    name: calorie-log
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

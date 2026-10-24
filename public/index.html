@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calorie Log</title>
+<meta name="description" content="Daily food and training log that exports clean text for calorie analysis.">
+<meta name="theme-color" content="#171412">
+
+<!-- iOS standalone: these are what make it launch without Safari chrome from the home screen. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Log">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="manifest" href="/manifest.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <span class="wordmark">
+      <svg class="tally" viewBox="0 0 34 20" aria-hidden="true" focusable="false">
+        <g stroke-linecap="round" stroke-width="2.6">
+          <path d="M5 3.5V16.5M12.6 3.5V16.5M20.2 3.5V16.5M27.8 3.5V16.5" stroke="currentColor"/>
+          <path d="M2.5 15.2 30.5 5.2" stroke="var(--ochre)"/>
+        </g>
+      </svg>
+      Calorie Log
+    </span>
+    <button class="waiting" id="waiting" hidden></button>
+  </header>
+
+  <main class="scroll" id="scroll">
+
+    <!-- TODAY -->
+    <section class="screen is-active" id="s-today" aria-label="Today">
+
+      <div class="datebar">
+        <button class="step" id="prev-day" aria-label="Previous day">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dateblock">
+          <button class="date-main" id="date-main" aria-label="Change date"></button>
+          <div class="date-sub" id="date-sub"></div>
+          <input type="date" id="date-pick" class="date-pick" aria-label="Pick a date" tabindex="-1">
+        </div>
+        <button class="step" id="next-day" aria-label="Next day">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="turnable" id="turnable">
+
+        <div class="rule-head">
+          <span class="rule-label">Split</span><i class="rule"></i>
+          <span class="rule-meta" id="split-hint"></span>
+        </div>
+        <div class="chiprow" id="split-row"></div>
+
+        <div id="meals"></div>
+
+        <div class="rule-head">
+          <span class="rule-label">Day</span><i class="rule"></i>
+        </div>
+        <div class="daygrid">
+          <button class="tick" id="shake" aria-pressed="false">
+            <span class="tickbox" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span>Protein shake</span>
+          </button>
+          <div class="weightfield">
+            <label for="weight">Weight</label>
+            <span class="weightwrap">
+              <input id="weight" inputmode="decimal" autocomplete="off" placeholder="-">
+              <span class="unit" aria-hidden="true">kg</span>
+            </span>
+          </div>
+        </div>
+        <input id="note" class="note" autocomplete="off" placeholder="Note, optional" aria-label="Note for the day">
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="screen" id="s-history" aria-label="History" hidden>
+      <h1 class="screen-title">History</h1>
+      <div class="rule-head">
+        <span class="rule-label">Logged days</span><i class="rule"></i>
+        <span class="rule-meta" id="history-count"></span>
+      </div>
+      <div id="history-list"></div>
+    </section>
+
+    <!-- COPY -->
+    <section class="screen" id="s-copy" aria-label="Copy" hidden>
+      <h1 class="screen-title">Copy</h1>
+
+      <div class="headline-card">
+        <div class="rule-head">
+          <span class="rule-label">Not copied yet</span><i class="rule"></i>
+          <span class="rule-meta" id="new-count"></span>
+        </div>
+        <p class="headline-range" id="new-range"></p>
+        <button class="btn btn-primary" id="copy-new"></button>
+      </div>
+
+      <div class="rule-head">
+        <span class="rule-label">Other ranges</span><i class="rule"></i>
+      </div>
+      <div class="chiprow" id="range-row">
+        <button class="chip" data-range="7">Last 7 days</button>
+        <button class="chip" data-range="14">Last 14 days</button>
+        <button class="chip" data-range="day">This day only</button>
+        <button class="chip" data-range="all">Everything</button>
+      </div>
+
+      <div class="rangefields">
+        <label class="rangefield"><span>From</span><input type="date" id="from-date"></label>
+        <label class="rangefield"><span>To</span><input type="date" id="to-date"></label>
+      </div>
+
+      <div class="rule-head">
+        <span class="rule-label">Preview</span><i class="rule"></i>
+        <span class="rule-meta" id="preview-meta"></span>
+      </div>
+      <p class="skipnote" id="skip-note" hidden></p>
+      <pre class="preview" id="preview" tabindex="0"></pre>
+      <button class="btn btn-primary" id="copy-range">Copy this range</button>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen" id="s-settings" aria-label="Settings" hidden>
+      <h1 class="screen-title">Settings</h1>
+
+      <div class="rule-head">
+        <span class="rule-label">Splits</span><i class="rule"></i>
+        <span class="rule-meta" id="split-count"></span>
+      </div>
+      <div id="split-editor"></div>
+      <form class="addrow" id="add-split-form">
+        <input id="add-split" class="add-input" placeholder="Add a split" autocomplete="off" maxlength="24">
+        <button class="btn btn-quiet" type="submit">Add</button>
+      </form>
+
+      <div class="rule-head">
+        <span class="rule-label">Backup</span><i class="rule"></i>
+      </div>
+      <p class="hint">Your log lives on this device only. Clearing the browser's data wipes it, so take a backup now and then.</p>
+      <div class="btnrow">
+        <button class="btn btn-quiet" id="export">Download backup</button>
+        <button class="btn btn-quiet" id="import-btn">Import backup</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </div>
+
+      <div class="rule-head">
+        <span class="rule-label">Copy marker</span><i class="rule"></i>
+      </div>
+      <p class="hint" id="marker-state"></p>
+      <div class="btnrow">
+        <label class="rangefield"><span>Copied through</span><input type="date" id="marker-date"></label>
+        <button class="btn btn-quiet" id="marker-clear">Clear marker</button>
+      </div>
+
+      <div class="rule-head">
+        <span class="rule-label">Danger</span><i class="rule"></i>
+      </div>
+      <div class="btnrow">
+        <button class="btn btn-danger" id="wipe">Delete everything</button>
+      </div>
+      <p class="hint" id="storage-note"></p>
+    </section>
+
+  </main>
+
+  <nav class="tabbar" aria-label="Sections">
+    <button class="tab is-active" data-screen="today">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Today
+    </button>
+    <button class="tab" data-screen="history">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      History
+    </button>
+    <button class="tab" data-screen="copy">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3.5" width="12" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 20.5h-10a2 2 0 0 1-2-2v-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Copy
+    </button>
+    <button class="tab" data-screen="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Settings
+    </button>
+  </nav>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span id="toast-text"></span>
+  <button class="toast-action" id="toast-action" hidden></button>
+</div>
+
+<dialog class="manual" id="manual">
+  <h2>Copy it by hand</h2>
+  <p>This browser blocked the clipboard. The text below is already selected, so long-press and choose Copy.</p>
+  <textarea id="manual-text" readonly></textarea>
+  <button class="btn btn-quiet" id="manual-close">Done</button>
+</dialog>
+
+<script src="/app.js"></script>
+</body>
+</html>

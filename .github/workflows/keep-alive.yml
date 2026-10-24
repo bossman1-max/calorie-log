@@ -1,0 +1,33 @@
+name: Keep the log awake
+
+# Render's free tier sleeps after 15 minutes idle, costing the next visitor a ~1 minute
+# cold start. This pings /healthz to keep it warm.
+#
+# TWO TRAPS, both of which have bitten this account before:
+#
+# 1. GITHUB SILENTLY DISABLES THIS AFTER 60 DAYS with no new commits to the repo. No email,
+#    no log entry, it just stops. This is exactly why the Kiki keep-alive quietly died.
+#    Check for it at Actions -> this workflow -> a yellow "scheduled workflow is disabled"
+#    banner, and press Enable workflow. Only commits reset the 60-day clock.
+#    Because of this, cron-job.org is the recommended pinger; see README.
+#
+# 2. FREE HOURS ARE FINITE: 750 per workspace per month, and a 31-day month is 744 hours.
+#    Pinging around the clock would consume the entire allowance on this one app and get
+#    every free service in the workspace suspended until the 1st. So the schedule below
+#    deliberately covers waking hours only.
+#
+# Times are UTC. Singapore is UTC+8, so 23:00 UTC = 07:00 SGT and 15:00 UTC = 23:00 SGT.
+# Hours 23 and 0-15 UTC therefore cover roughly 07:00-24:00 Singapore time.
+# GitHub also runs scheduled jobs late when it is busy, so treat this as best effort.
+
+on:
+  schedule:
+    - cron: "*/10 0-15,23 * * *"
+  workflow_dispatch: {} # lets you fire a manual ping from the Actions tab to test it
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the health check
+        run: curl --fail --silent --show-error --max-time 90 https://calorie-log.onrender.com/healthz
